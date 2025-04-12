@@ -1,0 +1,419 @@
+<html>
+
+<head>
+    <title>Controle de Desperdício de Alimentos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+    <div class="container mx-auto p-4">
+        <div class="flex items-center justify-center mb-8">
+            <i class="fas fa-utensils fa-4x text-blue-600 mr-4"></i>
+            <h1 class="text-4xl font-extrabold text-center text-blue-600">
+                Controle de Desperdício de Alimentos
+            </h1>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+                class="bg-blue-500 text-white p-4 rounded-lg flex flex-col items-center justify-center hover:bg-blue-600 transition duration-300"
+                id="registerWasteBtn">
+                <i class="fas fa-utensils fa-3x mb-2"></i>
+                <span class="text-xl">Registrar Desperdício</span>
+            </button>
+            <button
+                class="bg-green-500 text-white p-4 rounded-lg flex flex-col items-center justify-center hover:bg-green-600 transition duration-300"
+                id="viewChartBtn">
+                <i class="fas fa-chart-bar fa-3x mb-2"></i>
+                <span class="text-xl">Ver Gráfico</span>
+            </button>
+            <button
+                class="bg-red-500 text-white p-4 rounded-lg flex flex-col items-center justify-center hover:bg-red-600 transition duration-300"
+                id="generatePdfBtn">
+                <i class="fas fa-file-pdf fa-3x mb-2"></i>
+                <span class="text-xl">Gerar PDF</span>
+            </button>
+        </div>
+        <div class="mt-8 hidden" id="chartContainer">
+            <canvas id="wasteChart"></canvas>
+        </div>
+        <div class="mt-8 bg-white p-4 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">
+                <i class="fas fa-history mr-2"></i>
+                Histórico de Desperdício
+            </h2>
+            <div class="flex flex-col md:flex-row mb-4">
+                <input type="date" id="filterDate" class="p-2 border rounded-lg mr-2 mb-2 md:mb-0"
+                    placeholder="Filtrar por Data">
+                <select id="filterSeries" class="p-2 border rounded-lg mb-2 md:mb-0">
+                    <option value="">Filtrar por Série</option>
+                    <option value="1° Ano">1° Ano</option>
+                    <option value="2° Ano">2° Ano</option>
+                    <option value="3° Ano">3° Ano</option>
+                </select>
+                <div class="flex flex-col md:flex-row md:ml-2">
+                    <button
+                        class="bg-blue-500 text-white px-4 py-2 rounded-lg mb-2 md:mb-0 md:mr-2 hover:bg-blue-600 transition duration-300"
+                        id="filterBtn">
+                        <i class="fas fa-filter mr-1"></i>Filtrar
+                    </button>
+                    <button
+                        class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-300"
+                        id="clearFilterBtn">
+                        <i class="fas fa-times mr-1"></i>Limpar Filtros
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white text-center" id="wasteTable">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 border-b bg-gray-200">Data</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Quantidade (cm)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Categoria</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Série</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 text-left">
+                <span class="text-sm font-bold">Total de registros: <span id="totalRecords">0</span></span>
+            </div>
+        </div>
+        <div class="mt-8 bg-white p-4 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">
+                <i class="fas fa-chart-pie mr-2"></i>
+                Resumo de Desperdício
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white text-center" id="summaryTable">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 border-b bg-gray-200">Série</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Total (cm)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Média por Dia (cm)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="py-2 px-4 border-b font-bold">Total Geral</td>
+                            <td class="py-2 px-4 border-b font-bold" id="totalGeneral">0</td>
+                            <td class="py-2 px-4 border-b font-bold" id="averageGeneral">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para registrar desperdício -->
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden justify-center items-center" id="registerWasteModal">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-4 text-gray-700">
+                <i class="fas fa-plus-circle mr-2"></i>
+                Registrar Desperdício
+            </h2>
+            <form id="registerWasteForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700">Data</label>
+                    <input class="w-full p-2 border rounded-lg" id="wasteDate" type="date" />
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Quantidade (cm)</label>
+                    <input class="w-full p-2 border rounded-lg" id="wasteQuantity" type="number" step="0.01" />
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Categoria</label>
+                    <select class="w-full p-2 border rounded-lg" id="wasteCategory">
+                        <option value="Desperdício">Desperdício</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Série</label>
+                    <select class="w-full p-2 border rounded-lg" id="wasteSeries">
+                        <option value="1° Ano">1° Ano</option>
+                        <option value="2° Ano">2° Ano</option>
+                        <option value="3° Ano">3° Ano</option>
+                    </select>
+                </div>
+                <div class="flex justify-end">
+                    <button
+                        class="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2 hover:bg-gray-600 transition duration-300"
+                        id="cancelBtn" type="button">
+                        <i class="fas fa-times mr-1"></i>Cancelar
+                    </button>
+                    <button
+                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+                        type="submit">
+                        <i class="fas fa-check mr-1"></i>Registrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wasteData = JSON.parse(localStorage.getItem('wasteData')) || [];
+            const tableBody = document.getElementById('wasteTable').getElementsByTagName('tbody')[0];
+            const summaryTableBody = document.getElementById('summaryTable').getElementsByTagName('tbody')[0];
+            const ctx = document.getElementById('wasteChart').getContext('2d');
+            let wasteChart;
+
+            const formatDate = (dateString) => {
+                const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+                const date = new Date(dateString);
+                date.setDate(date.getDate() + 1); // Ajuste para o fuso horário
+                return date.toLocaleDateString('pt-BR', options);
+            };
+
+            const updateTable = (filteredData = wasteData) => {
+                tableBody.innerHTML = '';
+                filteredData.forEach((item, index) => {
+                    const newRow = tableBody.insertRow();
+                    newRow.innerHTML = `
+                        <td class="py-2 px-4 border-b">${formatDate(item.date)}</td>
+                        <td class="py-2 px-4 border-b">${item.quantity}</td>
+                        <td class="py-2 px-4 border-b">${item.category}</td>
+                        <td class="py-2 px-4 border-b">${item.series}</td>
+                        <td class="py-2 px-4 border-b">
+                            <button class="bg-red-500 text-white px-2 py-1 rounded-lg hover:bg-red-600 transition duration-300" onclick="deleteRecord(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                });
+                document.getElementById('totalRecords').innerText = filteredData.length;
+            };
+
+            const updateSummaryTable = () => {
+                summaryTableBody.innerHTML = '';
+                const series = ['1° Ano', '2° Ano', '3° Ano'];
+                const seriesData = series.map(serie => {
+                    return wasteData.filter(item => item.series === serie).reduce((sum, item) => sum + parseFloat(item.quantity), 0);
+                });
+
+                const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                const totalDays = daysOfWeek.length;
+
+                let totalGeneral = 0;
+                let totalAverageGeneral = 0;
+
+                series.forEach((serie, index) => {
+                    const total = seriesData[index];
+                    const average = total / totalDays;
+                    totalGeneral += total;
+                    totalAverageGeneral += average;
+                    const newRow = summaryTableBody.insertRow();
+                    newRow.innerHTML = `
+                        <td class="py-2 px-4 border-b">${serie}</td>
+                        <td class="py-2 px-4 border-b">${total.toFixed(2)}</td>
+                        <td class="py-2 px-4 border-b">${average.toFixed(2)}</td>
+                    `;
+                });
+
+                document.getElementById('totalGeneral').innerText = totalGeneral.toFixed(2);
+                document.getElementById('averageGeneral').innerText = totalAverageGeneral.toFixed(2);
+            };
+
+            const updateChart = (filteredData = wasteData) => {
+                const series = ['1° Ano', '2° Ano', '3° Ano'];
+                const seriesData = series.map(serie => {
+                    return filteredData.filter(item => item.series === serie).reduce((sum, item) => sum + parseFloat(item.quantity), 0);
+                });
+
+                const sortedIndices = [...seriesData.keys()].sort((a, b) => seriesData[b] - seriesData[a]);
+                const maxIndex = sortedIndices[0];
+                const secondMaxIndex = sortedIndices[1];
+
+                const backgroundColors = seriesData.map((_, index) => {
+                    if (index === maxIndex) return 'rgba(255, 99, 132, 0.2)';
+                    if (index === secondMaxIndex) return 'rgba(255, 206, 86, 0.2)';
+                    return 'rgba(54, 162, 235, 0.2)';
+                });
+
+                const borderColors = seriesData.map((_, index) => {
+                    if (index === maxIndex) return 'rgba(255, 99, 132, 1)';
+                    if (index === secondMaxIndex) return 'rgba(255, 206, 86, 1)';
+                    return 'rgba(54, 162, 235, 1)';
+                });
+
+                if (wasteChart) {
+                    wasteChart.destroy();
+                }
+
+                wasteChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: series,
+                        datasets: [{
+                            label: 'Desperdício de Alimentos (cm)',
+                            data: seriesData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            };
+
+            document.getElementById('registerWasteBtn').addEventListener('click', () => {
+                document.getElementById('registerWasteModal').classList.remove('hidden');
+            });
+
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                document.getElementById('registerWasteModal').classList.add('hidden');
+            });
+
+            document.getElementById('registerWasteForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const date = document.getElementById('wasteDate').value;
+                const quantity = document.getElementById('wasteQuantity').value;
+                const category = document.getElementById('wasteCategory').value;
+                const series = document.getElementById('wasteSeries').value;
+
+                wasteData.push({ date, quantity, category, series });
+                localStorage.setItem('wasteData', JSON.stringify(wasteData));
+
+                updateTable();
+                updateChart();
+                updateSummaryTable();
+
+                document.getElementById('registerWasteModal').classList.add('hidden');
+            });
+
+            document.getElementById('viewChartBtn').addEventListener('click', () => {
+                document.getElementById('chartContainer').classList.toggle('hidden');
+            });
+
+            document.getElementById('generatePdfBtn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Adicionar título
+                doc.setFontSize(18);
+                doc.text("Histórico de Desperdício de Alimentos", 105, 10, null, null, 'center');
+
+                // Adicionar gráfico
+                const chartImage = wasteChart.toBase64Image();
+                doc.addImage(chartImage, 'PNG', 10, 20, 180, 80);
+
+                // Adicionar título da tabela de resumo
+                doc.setFontSize(16);
+                doc.text("Resumo de Desperdício", 105, 110, null, null, 'center');
+
+                // Obter dados da tabela de resumo (corpo + rodapé)
+                const summaryBodyRows = Array.from(summaryTableBody.rows).map(row =>
+                    Array.from(row.cells).map(cell => cell.innerText)
+                );
+
+                // Adicionar linha do total geral
+                const totalGeneralRow = [
+                    document.querySelector('#summaryTable tfoot td:nth-child(1)').innerText,
+                    document.querySelector('#summaryTable tfoot td:nth-child(2)').innerText,
+                    document.querySelector('#summaryTable tfoot td:nth-child(3)').innerText
+                ];
+
+                const summaryRows = [...summaryBodyRows, totalGeneralRow];
+
+                // Adicionar tabela de resumo
+                doc.autoTable({
+                    startY: 120,
+                    head: [['Série', 'Total (cm)', 'Média por Dia (cm)']],
+                    body: summaryRows,
+                    styles: {
+                        halign: 'center',
+                        cellPadding: 4,
+                        fontSize: 10
+                    },
+                    headStyles: {
+                        fillColor: [128, 128, 128],
+                        textColor: [255, 255, 255]
+                    },
+                    // Aplicar estilo especial para a última linha (total geral)
+                    didParseCell: function (data) {
+                        if (data.row.index === summaryRows.length - 1) {
+                            data.cell.styles.fillColor = [220, 220, 220];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 40 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 40 }
+                    },
+                    margin: { left: 35, right: 35 }
+                });
+
+                // Adicionar título da tabela histórica
+                doc.setFontSize(16);
+                doc.text("Histórico de Desperdício", 105, doc.autoTable.previous.finalY + 10, null, null, 'center');
+
+                // Adicionar tabela histórico
+                doc.autoTable({
+                    startY: doc.autoTable.previous.finalY + 20,
+                    head: [['Data', 'Quantidade (cm)', 'Categoria', 'Série']],
+                    body: wasteData.map(item => [formatDate(item.date), item.quantity, item.category, item.series]),
+                    styles: { halign: 'center' },
+                    headStyles: { fillColor: [128, 128, 128] },
+                    columnStyles: {
+                        0: { cellWidth: 40 },
+                        1: { cellWidth: 40 },
+                        2: { cellWidth: 40 },
+                        3: { cellWidth: 40 }
+                    }
+                });
+
+                doc.save('historico_desperdicio.pdf');
+            });
+
+            document.getElementById('filterBtn').addEventListener('click', () => {
+                const filterDate = document.getElementById('filterDate').value;
+                const filterSeries = document.getElementById('filterSeries').value;
+
+                const filteredData = wasteData.filter(item => {
+                    const matchesDate = filterDate ? item.date === filterDate : true;
+                    const matchesSeries = filterSeries ? item.series === filterSeries : true;
+                    return matchesDate && matchesSeries;
+                });
+
+                updateTable(filteredData);
+                updateChart(filteredData);
+            });
+
+            document.getElementById('clearFilterBtn').addEventListener('click', () => {
+                document.getElementById('filterDate').value = '';
+                document.getElementById('filterSeries').value = '';
+                updateTable();
+                updateChart();
+            });
+
+            window.deleteRecord = (index) => {
+                wasteData.splice(index, 1);
+                localStorage.setItem('wasteData', JSON.stringify(wasteData));
+                updateTable();
+                updateChart();
+                updateSummaryTable();
+            };
+
+            updateTable();
+            updateChart();
+            updateSummaryTable();
+        });
+    </script>
+</body>
+
+</html>
