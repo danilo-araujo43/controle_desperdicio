@@ -365,7 +365,7 @@
                 // Adicionar tabela histórico
                 doc.autoTable({
                     startY: doc.autoTable.previous.finalY + 20,
-                    head: [['Data', 'Quantidade (cm)³', 'Categoria', 'Série']],
+                    head: [['Data', 'Quantidade (cm³)', 'Categoria', 'Série']],
                     body: wasteData.map(item => [formatDate(item.date), item.quantity, item.category, item.series]),
                     styles: { halign: 'center' },
                     headStyles: { fillColor: [128, 128, 128] },
