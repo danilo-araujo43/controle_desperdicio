@@ -72,7 +72,7 @@
                     <thead>
                         <tr>
                             <th class="py-2 px-4 border-b bg-gray-200">Data</th>
-                            <th class="py-2 px-4 border-b bg-gray-200">Quantidade (cm)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Quantidade (cm³)</th>
                             <th class="py-2 px-4 border-b bg-gray-200">Categoria</th>
                             <th class="py-2 px-4 border-b bg-gray-200">Série</th>
                             <th class="py-2 px-4 border-b bg-gray-200">Ações</th>
@@ -96,8 +96,8 @@
                     <thead>
                         <tr>
                             <th class="py-2 px-4 border-b bg-gray-200">Série</th>
-                            <th class="py-2 px-4 border-b bg-gray-200">Total (cm)</th>
-                            <th class="py-2 px-4 border-b bg-gray-200">Média por Dia (cm)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Total (cm³)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Média por Dia (cm³)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,7 +126,7 @@
                     <input class="w-full p-2 border rounded-lg" id="wasteDate" type="date" />
                 </div>
                 <div class="mb-4">
-                    <label class="block text-gray-700">Quantidade (cm)</label>
+                    <label class="block text-gray-700">Quantidade (cm³)</label>
                     <input class="w-full p-2 border rounded-lg" id="wasteQuantity" type="number" step="0.01" />
                 </div>
                 <div class="mb-4">
@@ -253,7 +253,7 @@
                     data: {
                         labels: series,
                         datasets: [{
-                            label: 'Desperdício de Alimentos (cm)',
+                            label: 'Desperdício de Alimentos (cm³)',
                             data: seriesData,
                             backgroundColor: backgroundColors,
                             borderColor: borderColors,
@@ -332,7 +332,7 @@
                 // Adicionar tabela de resumo
                 doc.autoTable({
                     startY: 120,
-                    head: [['Série', 'Total (cm)', 'Média por Dia (cm)']],
+                    head: [['Série', 'Total (cm³)', 'Média por Dia (cm³)']],
                     body: summaryRows,
                     styles: {
                         halign: 'center',
@@ -365,7 +365,7 @@
                 // Adicionar tabela histórico
                 doc.autoTable({
                     startY: doc.autoTable.previous.finalY + 20,
-                    head: [['Data', 'Quantidade (cm)', 'Categoria', 'Série']],
+                    head: [['Data', 'Quantidade (cm)³', 'Categoria', 'Série']],
                     body: wasteData.map(item => [formatDate(item.date), item.quantity, item.category, item.series]),
                     styles: { halign: 'center' },
                     headStyles: { fillColor: [128, 128, 128] },
