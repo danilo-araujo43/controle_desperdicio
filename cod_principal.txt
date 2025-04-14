@@ -91,23 +91,13 @@
                 <i class="fas fa-chart-pie mr-2"></i>
                 Resumo de Desperdício
             </h2>
-            <div class="mb-4 flex items-center">
-                <label class="block text-gray-700 mr-2">Divisor para cálculo da média:</label>
-                <select class="p-2 border rounded-lg" id="averageDivisor">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white text-center" id="summaryTable">
                     <thead>
                         <tr>
                             <th class="py-2 px-4 border-b bg-gray-200">Série</th>
                             <th class="py-2 px-4 border-b bg-gray-200">Total (cm³)</th>
-                            <th class="py-2 px-4 border-b bg-gray-200">Média (Total/Divisor)</th>
+                            <th class="py-2 px-4 border-b bg-gray-200">Média por Dia (cm³)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -205,30 +195,31 @@
             const updateSummaryTable = () => {
                 summaryTableBody.innerHTML = '';
                 const series = ['1° Ano', '2° Ano', '3° Ano'];
-                const divisor = parseInt(document.getElementById('averageDivisor').value) || 1;
-                
+                const seriesData = series.map(serie => {
+                    return wasteData.filter(item => item.series === serie).reduce((sum, item) => sum + parseFloat(item.quantity), 0);
+                });
+
+                const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+                const totalDays = daysOfWeek.length;
+
                 let totalGeneral = 0;
                 let totalAverageGeneral = 0;
 
-                series.forEach((serie) => {
-                    const serieData = wasteData.filter(item => item.series === serie);
-                    const serieTotal = serieData.reduce((sum, item) => sum + parseFloat(item.quantity), 0);
-                    
-                    const average = serieTotal / divisor;
-                    
-                    totalGeneral += serieTotal;
+                series.forEach((serie, index) => {
+                    const total = seriesData[index];
+                    const average = total / totalDays;
+                    totalGeneral += total;
                     totalAverageGeneral += average;
-                    
                     const newRow = summaryTableBody.insertRow();
                     newRow.innerHTML = `
                         <td class="py-2 px-4 border-b">${serie}</td>
-                        <td class="py-2 px-4 border-b">${serieTotal.toFixed(2)}</td>
+                        <td class="py-2 px-4 border-b">${total.toFixed(2)}</td>
                         <td class="py-2 px-4 border-b">${average.toFixed(2)}</td>
                     `;
                 });
 
                 document.getElementById('totalGeneral').innerText = totalGeneral.toFixed(2);
-                document.getElementById('averageGeneral').innerText = (totalGeneral / divisor).toFixed(2);
+                document.getElementById('averageGeneral').innerText = totalAverageGeneral.toFixed(2);
             };
 
             const updateChart = (filteredData = wasteData) => {
@@ -281,9 +272,6 @@
 
             document.getElementById('registerWasteBtn').addEventListener('click', () => {
                 document.getElementById('registerWasteModal').classList.remove('hidden');
-                // Definir a data atual como padrão
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('wasteDate').value = today;
             });
 
             document.getElementById('cancelBtn').addEventListener('click', () => {
@@ -297,11 +285,6 @@
                 const category = document.getElementById('wasteCategory').value;
                 const series = document.getElementById('wasteSeries').value;
 
-                if (!date || !quantity) {
-                    alert('Por favor, preencha todos os campos obrigatórios!');
-                    return;
-                }
-
                 wasteData.push({ date, quantity, category, series });
                 localStorage.setItem('wasteData', JSON.stringify(wasteData));
 
@@ -309,16 +292,11 @@
                 updateChart();
                 updateSummaryTable();
 
-                // Limpar o formulário
-                document.getElementById('wasteQuantity').value = '';
                 document.getElementById('registerWasteModal').classList.add('hidden');
             });
 
             document.getElementById('viewChartBtn').addEventListener('click', () => {
                 document.getElementById('chartContainer').classList.toggle('hidden');
-                if (!document.getElementById('chartContainer').classList.contains('hidden')) {
-                    updateChart();
-                }
             });
 
             document.getElementById('generatePdfBtn').addEventListener('click', () => {
@@ -354,7 +332,7 @@
                 // Adicionar tabela de resumo
                 doc.autoTable({
                     startY: 120,
-                    head: [['Série', 'Total (cm³)', 'Média (Total/Divisor)']],
+                    head: [['Série', 'Total (cm³)', 'Média por Dia (cm³)']],
                     body: summaryRows,
                     styles: {
                         halign: 'center',
@@ -365,6 +343,7 @@
                         fillColor: [128, 128, 128],
                         textColor: [255, 255, 255]
                     },
+                    // Aplicar estilo especial para a última linha (total geral)
                     didParseCell: function (data) {
                         if (data.row.index === summaryRows.length - 1) {
                             data.cell.styles.fillColor = [220, 220, 220];
@@ -422,19 +401,14 @@
                 updateChart();
             });
 
-            document.getElementById('averageDivisor').addEventListener('change', updateSummaryTable);
-
             window.deleteRecord = (index) => {
-                if (confirm('Tem certeza que deseja excluir este registro?')) {
-                    wasteData.splice(index, 1);
-                    localStorage.setItem('wasteData', JSON.stringify(wasteData));
-                    updateTable();
-                    updateChart();
-                    updateSummaryTable();
-                }
+                wasteData.splice(index, 1);
+                localStorage.setItem('wasteData', JSON.stringify(wasteData));
+                updateTable();
+                updateChart();
+                updateSummaryTable();
             };
 
-            // Inicialização
             updateTable();
             updateChart();
             updateSummaryTable();
